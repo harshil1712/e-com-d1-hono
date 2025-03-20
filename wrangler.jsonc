@@ -9,7 +9,17 @@
 	"compatibility_date": "2025-03-17",
 	"observability": {
 		"enabled": true
-	}
+	},
+	"assets": {
+		"directory": "public"
+	},
+	"d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "products-read-replica",
+      "database_id": "6e1af64c-4a46-437b-b24c-4a3001eb183b"
+    }
+  ]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

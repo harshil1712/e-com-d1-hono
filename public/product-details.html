@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Details - E-commerce Store</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        background-color: #f9fafb;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background-color: white;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .store-title {
+        font-weight: bold;
+        font-size: 1.25rem;
+        text-decoration: none;
+        color: black;
+      }
+
+      .cart-button {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        background: none;
+        border: none;
+      }
+
+      .db-info {
+        background-color: #f3f4f6;
+        padding: 0.5rem 2rem;
+        font-size: 0.875rem;
+        color: #4b5563;
+      }
+
+      .db-type {
+        color: #10b981;
+      }
+
+      .product-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+      }
+
+      .product-title {
+        font-size: 1.875rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+      }
+
+      .product-description {
+        color: #4b5563;
+        margin-bottom: 1.5rem;
+      }
+
+      .product-price {
+        font-size: 1.875rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+      }
+
+      .product-stock {
+        font-size: 0.875rem;
+        color: #4b5563;
+        text-align: right;
+      }
+
+      .add-to-cart-btn {
+        display: block;
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        text-align: center;
+        font-size: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .add-to-cart-btn:hover {
+        background-color: #1d4ed8;
+      }
+
+      .price-stock-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      footer {
+        background-color: white;
+        padding: 1rem 2rem;
+        text-align: center;
+        border-top: 1px solid #e5e7eb;
+        color: #4b5563;
+        font-size: 0.875rem;
+        margin-top: auto;
+      }
+
+      /* Back button */
+      .back-button {
+        display: inline-block;
+        margin-bottom: 1.5rem;
+        color: #2563eb;
+        text-decoration: none;
+        font-size: 0.875rem;
+      }
+
+      .back-button:hover {
+        text-decoration: underline;
+      }
+
+      /* Notification */
+      .notification {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        background-color: #10b981;
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transform: translateX(150%);
+        transition: transform 0.3s ease;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="index.html" class="store-title">E-commerce Store</a>
+      <button class="cart-button">Cart</button>
+    </header>
+
+    <div class="db-info">
+      <p>
+        DB Region: <span id="db-location"></span> | Type:
+        <span class="db-type">Replica</span> | D1 Query Duration:
+        <span id="query-duration"></span> | D1 Total Duration:
+        <span id="db-duration"></span>
+      </p>
+    </div>
+
+    <main class="product-container">
+      <a href="index.html" class="back-button">← Back to products</a>
+      <h1 class="product-title" id="product-title">Product Name</h1>
+      <p class="product-description" id="product-description">
+        Product description goes here.
+      </p>
+
+      <div class="price-stock-container">
+        <p class="product-price" id="product-price">$0.00</p>
+        <p class="product-stock" id="product-stock">0 in stock</p>
+      </div>
+
+      <button class="add-to-cart-btn" id="add-to-cart">Add to Cart</button>
+    </main>
+
+    <div class="notification" id="notification">Added to cart!</div>
+
+    <footer>
+      <p>© 2025 E-commerce Store. All rights reserved.</p>
+    </footer>
+
+    <script>
+      // Get query parameter from URL
+      const url = new URL(window.location.href);
+      const searchParams = new URLSearchParams(url.search);
+      const productId = searchParams.get("id");
+
+      // Fetch product details
+      fetch(`/api/products/${productId}`)
+        .then((response) => response.json())
+        .then((product) => displayContent(product))
+        .catch((error) =>
+          console.error("Error fetching product details:", error)
+        );
+
+      // Function to display product details
+      function displayContent(product) {
+        const { results, meta, d1Duration } = product;
+        document.title = `${results[0].name} - E-commerce Store`;
+        document.getElementById("product-title").textContent = results[0].name;
+        document.getElementById("product-description").textContent =
+          results[0].description;
+        document.getElementById(
+          "product-price"
+        ).textContent = `$${results[0].price.toFixed(2)}`;
+        document.getElementById(
+          "product-stock"
+        ).textContent = `${results[0].inventory} in stock`;
+        document.getElementById("db-location").textContent =
+          meta.served_by_region;
+        document.getElementById("query-duration").textContent =
+          meta.duration + "ms" || "0ms";
+        document.getElementById("db-duration").textContent =
+          d1Duration + "ms" || "0ms";
+        document.querySelector(".db-type").textContent = meta.served_by_primary
+          ? "Primary"
+          : "Replica";
+      }
+    </script>
+  </body>
+</html>
