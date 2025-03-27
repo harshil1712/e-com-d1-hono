@@ -4,7 +4,7 @@ A Cloudflare Workers application built with Hono that demonstrates D1 database's
 
 ## Live Demo
 
-[Live Demo](https://d1-read-replica-hono.d1preview.com/)
+[Live Demo](https://d1-read-replica-hono.employee-account-d41.workers.dev/)
 
 ## Quickstart
 
