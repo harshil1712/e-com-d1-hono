@@ -9,9 +9,10 @@ A Cloudflare Workers application built with Hono that demonstrates D1 database's
 ## Quickstart
 
 1. Click on the button below to deploy the application to Cloudflare Workers:
+
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/harshil1712/e-com-d1-hono)
 
-2. Once the deployment is complete, navigate to the D1 Database page in the Cloudflare dashboard and create the `products` table.
+1. Once the deployment is complete, navigate to the D1 Database page in the Cloudflare dashboard and create the `products` table.
 
 ```sql
 -- Create table
