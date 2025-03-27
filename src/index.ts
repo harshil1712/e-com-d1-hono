@@ -35,7 +35,7 @@ const updateProduct = async (
       `UPDATE products SET ${updates} WHERE id = ?`
     );
     const { results } = await statement.bind(...[...values, id]).run();
-    return { results, newBookmark: session.getBookmark() };
+    return { results, latestBookmark: session.getBookmark() };
   } catch (error) {
     throw new Error(
       `Failed to update product in database: ${
@@ -61,7 +61,7 @@ const createProduct = async (
         .join(", ")})`
     );
     const { results } = await statement.bind(...values).run();
-    return { results, newBookmark: session.getBookmark() };
+    return { results, latestBookmark: session.getBookmark() };
   } catch (error: unknown) {
     throw new Error(
       `Failed to create product in database: ${
@@ -82,8 +82,8 @@ const getProduct = async (session: D1DatabaseSession, id: string) => {
       .bind(id)
       .run();
     const d1Duration = Date.now() - tsStart;
-    const newBookmark = session.getBookmark();
-    return { results, newBookmark, meta, d1Duration };
+    const latestBookmark = session.getBookmark();
+    return { results, latestBookmark, meta, d1Duration };
   } catch (error) {
     throw new Error(
       `Failed to get product from database: ${
@@ -106,9 +106,9 @@ const getProducts = async (session: D1DatabaseSession) => {
     // Calculate the total duration
     const d1Duration = Date.now() - tsStart;
 
-    const newBookmark = session.getBookmark();
+    const latestBookmark = session.getBookmark();
 
-    return { results, newBookmark, meta, d1Duration };
+    return { results, latestBookmark, meta, d1Duration };
   } catch (error) {
     throw new Error(
       `Failed to get products from database: ${
@@ -133,8 +133,8 @@ app.get("/api/products", async (c) => {
   const products = await getProducts(session);
 
   // set bookmark to the cookie
-  products.newBookmark &&
-    setCookie(c, "product_bookmark", products.newBookmark, {
+  products.latestBookmark &&
+    setCookie(c, "product_bookmark", products.latestBookmark, {
       maxAge: 60 * 60,
     });
 
@@ -153,8 +153,8 @@ app.get("/api/products/:id", async (c) => {
   const product = await getProduct(session, id);
 
   // set bookmark to the cookie
-  product.newBookmark &&
-    setCookie(c, "product_bookmark", product.newBookmark, {
+  product.latestBookmark &&
+    setCookie(c, "product_bookmark", product.latestBookmark, {
       maxAge: 60 * 60,
     });
 
@@ -174,8 +174,8 @@ app.post("/api/product", async (c) => {
       const updatedProduct = await updateProduct(session, id, product);
 
       // set bookmark to the cookie
-      updatedProduct.newBookmark &&
-        setCookie(c, "product_bookmark", updatedProduct.newBookmark, {
+      updatedProduct.latestBookmark &&
+        setCookie(c, "product_bookmark", updatedProduct.latestBookmark, {
           maxAge: 60 * 60,
         });
 
@@ -185,8 +185,8 @@ app.post("/api/product", async (c) => {
     const newProduct = await createProduct(session, product);
 
     // set bookmark to the cookie
-    newProduct.newBookmark &&
-      setCookie(c, "product_bookmark", newProduct.newBookmark, {
+    newProduct.latestBookmark &&
+      setCookie(c, "product_bookmark", newProduct.latestBookmark, {
         maxAge: 60 * 60,
       });
 
