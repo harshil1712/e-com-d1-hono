@@ -34,7 +34,8 @@ const updateProduct = async (
     const statement = session.prepare(
       `UPDATE products SET ${updates} WHERE id = ?`
     );
-    const { results } = await statement.bind(...[...values, id]).run();
+    const results = await statement.bind(...[...values, id]).run();
+
     return { results, latestBookmark: session.getBookmark() };
   } catch (error) {
     throw new Error(
@@ -60,7 +61,7 @@ const createProduct = async (
         .map(() => "?")
         .join(", ")})`
     );
-    const { results } = await statement.bind(...values).run();
+    const results = await statement.bind(...values).run();
     return { results, latestBookmark: session.getBookmark() };
   } catch (error: unknown) {
     throw new Error(
@@ -166,7 +167,7 @@ app.post("/api/product", async (c) => {
   const product = await c.req.json();
   const { id } = product;
 
-  const session = db.withSession("first-primary");
+  const session = db.withSession();
 
   try {
     const existingProduct = await getProduct(session, id);
@@ -179,7 +180,10 @@ app.post("/api/product", async (c) => {
           maxAge: 60 * 60,
         });
 
-      return c.text("Product updated successfully");
+      return c.json({
+        message: "Product updated successfully",
+        servedByPrimary: updatedProduct.results.meta.served_by_primary,
+      });
     }
 
     const newProduct = await createProduct(session, product);
@@ -190,7 +194,10 @@ app.post("/api/product", async (c) => {
         maxAge: 60 * 60,
       });
 
-    return c.text("Product created successfully");
+    return c.json({
+      message: "Product created successfully",
+      servedByPrimary: newProduct.results.meta.served_by_primary,
+    });
   } catch (error) {
     console.error(error);
     return c.text("Failed to create product");
