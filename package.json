@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "wrangler dev --remote",
     "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "postdeploy": "wrangler d1 execute DB --file=./db/seed.sql --remote"
   },
   "dependencies": {
     "hono": "^4.7.4"
