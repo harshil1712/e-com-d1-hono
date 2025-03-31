@@ -12,26 +12,7 @@ A Cloudflare Workers application built with Hono that demonstrates D1 database's
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/harshil1712/e-com-d1-hono)
 
-1. Once the deployment is complete, navigate to the D1 Database page in the Cloudflare dashboard and create the `products` table.
-
-```sql
--- Create table
-CREATE TABLE products (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    price DECIMAL(10, 2) NOT NULL,
-    inventory INTEGER NOT NULL DEFAULT 0,
-    category TEXT NOT NULL,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create index
-CREATE INDEX idx_products_id ON products(id);
-```
-
-3. Enable Read Replication:
+2. Enable Read Replication:
 
 ```bash
 # Enable Read replication
