@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
+import { withRetry } from "./utils/retry";
 
 interface Product {
   id: string;
@@ -17,106 +18,114 @@ const updateProduct = async (
   id: string,
   product: Partial<Product>
 ) => {
-  try {
-    const updates = Object.entries(product)
-      .filter(([_, value]) => value !== undefined)
-      .map(([key, _]) => `${key} = ?`)
-      .join(", ");
+  return await withRetry(async () => {
+    try {
+      const updates = Object.entries(product)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key, _]) => `${key} = ?`)
+        .join(", ");
 
-    if (!updates) {
-      throw new Error("No valid fields to update");
+      if (!updates) {
+        throw new Error("No valid fields to update");
+      }
+
+      const values = Object.entries(product)
+        .filter(([_, value]) => value !== undefined)
+        .map(([_, value]) => value);
+
+      const statement = session.prepare(
+        `UPDATE products SET ${updates} WHERE id = ?`
+      );
+      const results = await statement.bind(...[...values, id]).run();
+
+      return { results, latestBookmark: session.getBookmark() };
+    } catch (error) {
+      throw new Error(
+        `Failed to update product in database: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
-
-    const values = Object.entries(product)
-      .filter(([_, value]) => value !== undefined)
-      .map(([_, value]) => value);
-
-    const statement = session.prepare(
-      `UPDATE products SET ${updates} WHERE id = ?`
-    );
-    const results = await statement.bind(...[...values, id]).run();
-
-    return { results, latestBookmark: session.getBookmark() };
-  } catch (error) {
-    throw new Error(
-      `Failed to update product in database: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-  }
+  });
 };
 
 const createProduct = async (
   session: D1DatabaseSession,
   product: Omit<Product, "created_at" | "last_updated">
 ) => {
-  try {
-    const now = new Date().toISOString();
-    const fields = [...Object.keys(product), "created_at", "last_updated"];
+  return await withRetry(async () => {
+    try {
+      const now = new Date().toISOString();
+      const fields = [...Object.keys(product), "created_at", "last_updated"];
 
-    const values = [...Object.values(product), now, now];
+      const values = [...Object.values(product), now, now];
 
-    const statement = session.prepare(
-      `INSERT INTO products (${fields.join(", ")}) VALUES (${fields
-        .map(() => "?")
-        .join(", ")})`
-    );
-    const results = await statement.bind(...values).run();
-    return { results, latestBookmark: session.getBookmark() };
-  } catch (error: unknown) {
-    throw new Error(
-      `Failed to create product in database: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-  }
+      const statement = session.prepare(
+        `INSERT INTO products (${fields.join(", ")}) VALUES (${fields
+          .map(() => "?")
+          .join(", ")})`
+      );
+      const results = await statement.bind(...values).run();
+      return { results, latestBookmark: session.getBookmark() };
+    } catch (error: unknown) {
+      throw new Error(
+        `Failed to create product in database: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  });
 };
 
 const getProduct = async (session: D1DatabaseSession, id: string) => {
-  try {
-    if (!id) {
-      throw new Error("No ID provided");
+  return await withRetry(async () => {
+    try {
+      if (!id) {
+        throw new Error("No ID provided");
+      }
+      const tsStart = Date.now();
+      const { results, meta } = await session
+        .prepare("SELECT * FROM products WHERE id = ?")
+        .bind(id)
+        .run();
+      const d1Duration = Date.now() - tsStart;
+      const latestBookmark = session.getBookmark();
+      return { results, latestBookmark, meta, d1Duration };
+    } catch (error) {
+      throw new Error(
+        `Failed to get product from database: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
-    const tsStart = Date.now();
-    const { results, meta } = await session
-      .prepare("SELECT * FROM products WHERE id = ?")
-      .bind(id)
-      .run();
-    const d1Duration = Date.now() - tsStart;
-    const latestBookmark = session.getBookmark();
-    return { results, latestBookmark, meta, d1Duration };
-  } catch (error) {
-    throw new Error(
-      `Failed to get product from database: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-  }
+  });
 };
 
 const getProducts = async (session: D1DatabaseSession) => {
-  try {
-    // used to measure the total duration
-    const tsStart = Date.now();
+  return await withRetry(async () => {
+    try {
+      // used to measure the total duration
+      const tsStart = Date.now();
 
-    // get all products from the database
-    const { results, meta } = await session
-      .prepare("SELECT * FROM products")
-      .run();
+      // get all products from the database
+      const { results, meta } = await session
+        .prepare("SELECT * FROM products")
+        .run();
 
-    // Calculate the total duration
-    const d1Duration = Date.now() - tsStart;
+      // Calculate the total duration
+      const d1Duration = Date.now() - tsStart;
 
-    const latestBookmark = session.getBookmark();
+      const latestBookmark = session.getBookmark();
 
-    return { results, latestBookmark, meta, d1Duration };
-  } catch (error) {
-    throw new Error(
-      `Failed to get products from database: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-  }
+      return { results, latestBookmark, meta, d1Duration };
+    } catch (error) {
+      throw new Error(
+        `Failed to get products from database: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  });
 };
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
