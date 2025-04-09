@@ -5,6 +5,15 @@ export interface RetryConfig {
   backoffFactor?: number;
 }
 
+const shouldRetry = (error: unknown): boolean => {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  return (
+    errMsg.includes("Network connection lost") ||
+    errMsg.includes("storage caused object to be reset") ||
+    errMsg.includes("reset because its code was updated")
+  );
+};
+
 export const defaultRetryConfig: RetryConfig = {
   maxRetries: 3,
   initialDelay: 100,
@@ -27,12 +36,13 @@ export async function withRetry<T>(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await operation();
+      const result = await operation();
+      return result;
     } catch (error) {
       lastError = error;
 
-      if (attempt === maxRetries) {
-        break;
+      if (!shouldRetry(error) || attempt === maxRetries) {
+        throw error;
       }
 
       // Wait for the calculated delay
